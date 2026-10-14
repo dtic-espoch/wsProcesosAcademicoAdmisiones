@@ -12,7 +12,7 @@ const sql = require("mssql");
 
 module.exports.ListadoDictadoAsignaturaCarrera = async function (carrera, periodo) {
   var sentencia = "";
-  sentencia = "SELECT * FROM [" + carrera + "].[dbo].[Dictado_MateriasDocentes] AS DM INNER JOIN [" + carrera + "].[dbo].[Materias] AS M ON M.strCodigo=DM.strCodMateria INNER JOIN [" + carrera + "].[dbo].[Docentes] AS D ON D.strCodigo=DM.strCodDocente WHERE DM.strCodPeriodo='" + periodo + "'"
+  sentencia = "SELECT * FROM [" + carrera + "].[dbo].[Dictado_Materias] AS DM INNER JOIN [" + carrera + "].[dbo].[Materias] AS M ON M.strCodigo=DM.strCodMateria INNER JOIN [" + carrera + "].[dbo].[Docentes] AS D ON D.strCodigo=DM.strCodDocente WHERE DM.strCodPeriodo='" + periodo + "'"
   try {
     if (sentencia != "") {
       const sqlConsulta = await execDinamico(carrera, sentencia, "OK", "OK");
