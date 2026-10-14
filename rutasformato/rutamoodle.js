@@ -90,4 +90,15 @@ router.post('/MigrarReconocimientosExcel', async (req, res) => {
     }
 });
 
+router.get('/ObtenerDocentesExtra/:periodo', async (req, res) => {
+    const periodo = req.params.periodo;
+    try {
+        const informacion = await procesosmoodlefunciones.ProcesoObtenerDocentesExtra(periodo);
+        return sendResponseServicios(res, informacion.proceso, informacion.datos, informacion.message);
+    } catch (error) {
+        logger.error('Error ObtenerDocentesExtra', { message: error.message, stack: error.stack });
+        return sendResponseServicios(res, false, [], error.message);
+    }
+});
+
 module.exports = router;

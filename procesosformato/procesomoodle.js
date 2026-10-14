@@ -98,7 +98,7 @@ async function FuncionProcesoDictadoAsignaturaCarreraDocentes(dbcarrera, periodo
         var lstResultadoGeneral = {}
         var informacion = await sqlmoodle.ListadoDictadoAsignaturaCarrera(dbcarrera, periodo);
         var DatosCarrera = await sqlmoodle.ObternDatosCarreraFacultad('OAS_Master', dbcarrera);
-    
+
         lstResultadoGeneral.Carrera = DatosCarrera.datos.data[0]
         lstResultadoGeneral.Docentes = informacion.datos.data
         return lstResultadoGeneral
@@ -284,3 +284,46 @@ module.exports.ProcesoMigrarReconocimientosExcel = async function (iduser) {
         return sendResponseProcesos(false, [], error.message);
     }
 };
+
+module.exports.ProcesoObtenerDocentesExtra = async function (periodo) {
+    try {
+        var resultado = await FuncionObtenerDocentesExtra(periodo);
+        return sendResponseProcesos(true, resultado, 'OK')
+    } catch (error) {
+        logger.error('Error ProcesoObtenerDocentesExtra', { message: error.message, stack: error.stack });
+        return sendResponseProcesos(false, [], error.message)
+    }
+}
+
+async function FuncionObtenerDocentesExtra(periodo) {
+    const baseUrl = "https://apiinsacademicos.espoch.edu.ec/wsinsacademicos/rutaGeneral/getListaCarreras/";
+    const carrera = await axios.get(baseUrl + '3/' + periodo + "/-/2", { httpsAgent: agent });
+    const respuesta = carrera.data;
+
+    if (!respuesta || respuesta.success !== true || !Array.isArray(respuesta.listado)) {
+        throw new Error(respuesta?.message || 'Respuesta inválida del servicio de carreras.');
+    }
+
+    const resultado = [];
+    for (const datosCarrera of respuesta.listado) {
+        const baseDatos = datosCarrera?.strBaseDatos;
+        if (typeof baseDatos !== 'string' || !baseDatos.trim()) {
+            throw new Error(`La carrera ${datosCarrera?.strCodCarrera || datosCarrera?.nomCarrera || 'sin identificación'} no tiene strBaseDatos.`);
+        }
+
+        const informacion = await sqlmoodle.ListadoDocentesExtra(baseDatos, periodo);
+        if (!informacion || informacion.modelo !== true || informacion.datos?.count < 0) {
+            const mensaje = informacion?.datos?.message || informacion?.message || 'Error al consultar docentes extra.';
+            throw new Error(`Error en la carrera ${baseDatos}: ${mensaje}`);
+        }
+        if (!Array.isArray(informacion.datos?.data)) {
+            throw new Error(`Respuesta inválida de docentes extra para la carrera ${baseDatos}.`);
+        }
+
+        for (const docente of informacion.datos.data) {
+            resultado.push(docente);
+        }
+    }
+
+    return resultado;
+}
